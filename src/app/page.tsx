@@ -1,8 +1,8 @@
 "use client";
 
 import { Box, Button, Container, Paper, TextField, Typography, MenuItem, Switch, FormControlLabel } from "@mui/material";
-import { useState, useMemo } from "react";
-import { Dropzone } from "./components";
+import { useState, useEffect, useMemo } from "react";
+import { Dropzone } from "@/components";
 import Image from "next/image";
 
 const presets = {
@@ -20,6 +20,9 @@ export default function Home() {
 	const [stripMeta, setStripMeta] = useState(true);
 	const [loading, setLoading] = useState(false);
 	const [preset, setPreset] = useState("original");
+
+	const [mounted, setMounted] = useState(false);
+	useEffect(() => setMounted(true), []);
 
 	const previews = useMemo(
 		() =>
@@ -82,19 +85,14 @@ export default function Home() {
 				</Box>
 
 				{/* Превью файлов */}
-				{previews.length > 0 && (
-					<Box
-						sx={{
-							mt: 2,
-							display: "grid",
-							gridTemplateColumns: "repeat(auto-fill, 100px)",
-							gap: 2,
-						}}
-					>
+				{mounted && previews.length > 0 && (
+					<Box sx={{ mt: 2, display: "grid", gridTemplateColumns: "repeat(auto-fill, 100px)", gap: 2 }}>
 						{previews.map(({ file, url }) => (
 							<Box key={file.name} sx={{ textAlign: "center" }}>
-								<Image src={url} alt="ваше фото" width={100} height={100} objectFit="cover" />
-								<Typography variant="caption">{file.name}</Typography>
+								<Image src={url} alt={file.name} width="100" height="100" objectFit="cover" />
+								<Typography variant="caption">
+									{file.name}
+								</Typography>
 							</Box>
 						))}
 					</Box>
@@ -136,17 +134,7 @@ export default function Home() {
 					<MenuItem value="webp">WEBP</MenuItem>
 				</TextField>
 
-				<FormControlLabel
-					sx={{ mt: 2 }}
-					control={
-						<Switch
-							checked={stripMeta}
-							onChange={(e) => setStripMeta(e.target.checked)}
-							disabled={presets[preset].forceStrip}
-						/>
-					}
-					label="Удалить метаданные"
-				/>
+				<FormControlLabel sx={{ mt: 2 }} control={<Switch checked={stripMeta} onChange={(e) => setStripMeta(e.target.checked)} disabled={presets[preset].forceStrip} />} label="Удалить метаданные" />
 
 				<Button sx={{ mt: 3 }} variant="contained" fullWidth disabled={!files.length || loading} onClick={handleSubmit}>
 					{loading ? "Обработка..." : "Конвертировать"}
