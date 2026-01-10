@@ -90,9 +90,7 @@ export default function Home() {
 						{previews.map(({ file, url }) => (
 							<Box key={file.name} sx={{ textAlign: "center" }}>
 								<Image src={url} alt={file.name} width="100" height="100" objectFit="cover" />
-								<Typography variant="caption">
-									{file.name}
-								</Typography>
+								<Typography variant="caption">{file.name}</Typography>
 							</Box>
 						))}
 					</Box>
