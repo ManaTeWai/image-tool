@@ -19,7 +19,7 @@ export default function Home() {
 	const [format, setFormat] = useState("jpeg");
 	const [stripMeta, setStripMeta] = useState(true);
 	const [loading, setLoading] = useState(false);
-	const [preset, setPreset] = useState("original");
+	const [preset, setPreset] = useState<keyof typeof presets>("original");
 
 	const [mounted, setMounted] = useState(false);
 	useEffect(() => setMounted(true), []);
@@ -106,7 +106,7 @@ export default function Home() {
 					label="Пресет"
 					value={preset}
 					onChange={(e) => {
-						const p = e.target.value;
+						const p = e.target.value as keyof typeof presets;
 						setPreset(p);
 						setWidth(presets[p].w);
 						setHeight(presets[p].h);
