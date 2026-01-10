@@ -1,14 +1,8 @@
-import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
+import Providers from "./providers";
 
 export const metadata = {
   title: "Image Tool",
 };
-
-const theme = createTheme({
-  palette: {
-    mode: "dark",
-  },
-});
 
 export default function RootLayout({
   children,
@@ -18,10 +12,7 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          {children}
-        </ThemeProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
