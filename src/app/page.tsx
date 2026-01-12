@@ -6,10 +6,17 @@ import { Dropzone } from "@/components";
 import Image from "next/image";
 
 const presets = {
-	original: { label: "Оригинал", w: "", h: "", forceStrip: false },
-	fullhd: { label: "Full HD (1920×1080)", w: "1920", h: "1080", forceStrip: false },
-	"4k": { label: "4K (3840×2160)", w: "3840", h: "2160", forceStrip: false },
-	tv: { label: "TV Safe (1920×1080)", w: "1920", h: "1080", forceStrip: true },
+	original: { label: "Оригинал", w: "", h: "", forceStrip: false, forceFormat: null, lockSize: false },
+	fullhd: { label: "Full HD (1920×1080)", w: "1920", h: "1080", forceStrip: false, forceFormat: null, lockSize: false },
+	"4k": { label: "4K (3840×2160)", w: "3840", h: "2160", forceStrip: false, forceFormat: null, lockSize: false },
+	tv: {
+		label: "TV Safe (1920×1080)",
+		w: "1920",
+		h: "1080",
+		forceStrip: true,
+		forceFormat: "jpeg",
+		lockSize: true,
+	},
 };
 
 export default function Home() {
@@ -20,6 +27,7 @@ export default function Home() {
 	const [stripMeta, setStripMeta] = useState(true);
 	const [loading, setLoading] = useState(false);
 	const [preset, setPreset] = useState<keyof typeof presets>("original");
+	const [keepAspect, setKeepAspect] = useState(true);
 
 	const [mounted, setMounted] = useState(false);
 	useEffect(() => setMounted(true), []);
@@ -45,6 +53,7 @@ export default function Home() {
 			form.append("height", height);
 			form.append("format", format);
 			form.append("stripMeta", String(stripMeta));
+			form.append("keepAspect", keepAspect ? "1" : "0");
 
 			const res = await fetch("/api/image/convert", {
 				method: "POST",
@@ -105,12 +114,25 @@ export default function Home() {
 					value={preset}
 					onChange={(e) => {
 						const p = e.target.value as keyof typeof presets;
-						setPreset(p);
-						setWidth(presets[p].w);
-						setHeight(presets[p].h);
+						const presetData = presets[p];
 
-						if (presets[p].forceStrip) {
+						setPreset(p);
+						setWidth(presetData.w);
+						setHeight(presetData.h);
+
+						// TV safe → всегда strip meta
+						if (presetData.forceStrip) {
 							setStripMeta(true);
+						}
+
+						// TV safe → всегда jpeg
+						if (presetData.forceFormat) {
+							setFormat(presetData.forceFormat);
+						}
+
+						// TV safe → aspect ratio OFF
+						if (p === "tv") {
+							setKeepAspect(false);
 						}
 					}}
 				>
@@ -122,17 +144,19 @@ export default function Home() {
 				</TextField>
 
 				<Box sx={{ display: "flex", gap: 2, mt: 3 }}>
-					<TextField label="Ширина" fullWidth value={width} onChange={(e) => setWidth(e.target.value)} />
-					<TextField label="Высота" fullWidth value={height} onChange={(e) => setHeight(e.target.value)} />
+					<TextField label="Ширина" fullWidth value={width} onChange={(e) => setWidth(e.target.value)} disabled={presets[preset].lockSize} />
+
+					<TextField label="Высота" fullWidth value={height} onChange={(e) => setHeight(e.target.value)} disabled={presets[preset].lockSize} />
 				</Box>
 
-				<TextField select fullWidth sx={{ mt: 3 }} label="Формат" value={format} onChange={(e) => setFormat(e.target.value)}>
+				<TextField select fullWidth sx={{ mt: 3 }} label="Формат" value={format} onChange={(e) => setFormat(e.target.value)} disabled={!!presets[preset].forceFormat}>
 					<MenuItem value="jpeg">JPEG</MenuItem>
 					<MenuItem value="png">PNG</MenuItem>
 					<MenuItem value="webp">WEBP</MenuItem>
 				</TextField>
 
 				<FormControlLabel sx={{ mt: 2 }} control={<Switch checked={stripMeta} onChange={(e) => setStripMeta(e.target.checked)} disabled={presets[preset].forceStrip} />} label="Удалить метаданные" />
+				<FormControlLabel sx={{ mt: 2 }} control={<Switch checked={keepAspect} onChange={(e) => setKeepAspect(e.target.checked)} disabled={preset === "tv"} />} label="Сохранять пропорции" />
 
 				<Button sx={{ mt: 3 }} variant="contained" fullWidth disabled={!files.length || loading} onClick={handleSubmit}>
 					{loading ? "Обработка..." : "Конвертировать"}

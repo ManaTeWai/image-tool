@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import sharp from "sharp";
 import archiver from "archiver";
-import { PassThrough, Readable } from "stream";
+import { PassThrough } from "stream";
+import { Readable } from "stream";
 
 export const runtime = "nodejs";
 
@@ -9,78 +10,92 @@ export async function POST(req: NextRequest) {
 	try {
 		const formData = await req.formData();
 
+		/* ================================
+		   Files
+		================================ */
 		const rawFiles = formData.getAll("files");
-		const files = rawFiles.filter((f): f is File => typeof (f as { arrayBuffer?: unknown }).arrayBuffer === "function");
+		const files = rawFiles.filter(
+			
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(f): f is File => typeof (f as any)?.arrayBuffer === "function"
+		);
+
 		if (!files.length) {
-			return new Response("No files", { status: 400 });
+			return new Response("No files uploaded", { status: 400 });
 		}
 
+		/* ================================
+		   Params
+		================================ */
 		const width = Number(formData.get("width")) || undefined;
 		const height = Number(formData.get("height")) || undefined;
 
-		const formatRaw = formData.get("format");
-		let format = typeof formatRaw === "string" ? formatRaw.toLowerCase() : "jpeg";
+		const keepAspect = formData.get("keepAspect") !== "0";
+		const stripMeta = formData.get("stripMeta") === "true";
+
+		let format = String(formData.get("format") || "jpeg").toLowerCase();
 		if (format === "jpg") format = "jpeg";
-		const allowedFormats = ["jpeg", "png", "webp"];
-		if (!allowedFormats.includes(format)) {
+
+		if (!["jpeg", "png", "webp"].includes(format)) {
 			return new Response("Invalid format", { status: 400 });
 		}
 
-		const stripMeta = formData.get("stripMeta") === "true";
-
+		/* ================================
+		   ZIP stream
+		================================ */
 		const archive = archiver("zip", { zlib: { level: 9 } });
-		const stream = new PassThrough();
-		archive.pipe(stream);
+		const zipStream = new PassThrough();
+
+		archive.pipe(zipStream);
 
 		archive.on("error", (err: unknown) => {
-			console.error("Archive error:", err);
-			try {
-				archive.abort();
-			} catch {
-				// ignore
-			}
-			stream.destroy(err as Error);
+			console.error("ZIP error:", err);
+			zipStream.destroy(err as Error);
 		});
 
-		stream.on("error", (err) => {
-			console.error("Stream error:", err);
-		});
-
+		/* ================================
+		   Process files
+		================================ */
 		for (const file of files) {
-			const buffer = Buffer.from(await file.arrayBuffer());
+			const inputBuffer = Buffer.from(await file.arrayBuffer());
 
-			let img = sharp(buffer);
+			let image = sharp(inputBuffer, { failOnError: false });
 
 			if (width || height) {
-				img = img.resize({
-					width: width || undefined,
-					height: height || undefined,
-					fit: "inside",
+				image = image.resize({
+					width,
+					height,
+					fit: keepAspect ? "inside" : "fill",
 				});
 			}
 
-			if (!stripMeta) img = img.withMetadata();
+			if (!stripMeta) {
+				image = image.withMetadata();
+			}
 
 			switch (format) {
 				case "png":
-					img = img.png();
+					image = image.png();
 					break;
 				case "webp":
-					img = img.webp({ quality: 90 });
+					image = image.webp({ quality: 90 });
 					break;
 				default:
-					img = img.jpeg({ quality: 90 });
+					image = image.jpeg({ quality: 90 });
 			}
 
-			const out = await img.toBuffer();
+			const output = await image.toBuffer();
 
-			const base = file.name.replace(/\.\w+$/, "");
-			archive.append(out, { name: `${base}.${format}` });
+			const base = file.name.replace(/\.[^/.]+$/, "");
+			archive.append(output, { name: `${base}.${format}` });
 		}
 
 		archive.finalize();
 
-		const webStream = Readable.toWeb(stream) as unknown as ReadableStream;
+		/* ================================
+		   Return stream
+		================================ */
+		const webStream = Readable.toWeb(zipStream) as ReadableStream;
 
 		return new Response(webStream, {
 			headers: {
@@ -88,8 +103,8 @@ export async function POST(req: NextRequest) {
 				"Content-Disposition": 'attachment; filename="images.zip"',
 			},
 		});
-	} catch (e) {
-		console.error(e);
-		return new Response("Failed", { status: 500 });
+	} catch (err) {
+		console.error("Convert error:", err);
+		return new Response("Image processing failed", { status: 500 });
 	}
 }
