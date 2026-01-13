@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
 		================================ */
 		const rawFiles = formData.getAll("files");
 		const files = rawFiles.filter(
-			
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			(f): f is File => typeof (f as any)?.arrayBuffer === "function"
 		);
