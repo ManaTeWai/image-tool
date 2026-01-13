@@ -6,4 +6,4 @@ services:
     container_name: image
     restart: always
     ports:
-      - 3001: 3001
+      - "3001:3001"
