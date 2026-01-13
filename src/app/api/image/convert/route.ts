@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 		/* ================================
 		   ZIP stream
 		================================ */
-		const archive = archiver("zip", { zlib: { level: 9 } });
+		const archive = archiver("zip", { zlib: { level: 1 } });
 		const zipStream = new PassThrough();
 
 		archive.pipe(zipStream);
