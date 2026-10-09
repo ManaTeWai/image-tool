@@ -1,10 +1,29 @@
 services:
-  image:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: image
-    container_name: image
+  image-back:
+    image: mananedau/image-back:latest
+    container_name: image-back
     restart: always
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3003:3001"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - image-net
+
+  image-front:
+    image: mananedau/image-front:latest
+    container_name: image-front
+    restart: always
+    ports:
+      - "3002:3000"
+    environment:
+      - NODE_ENV=production
+      - BACKEND_URL=http://image-back:3001
+    depends_on:
+      - image-back
+    networks:
+      - image-net
+
+networks:
+  image-net:
+    driver: bridge

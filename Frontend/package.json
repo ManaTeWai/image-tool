@@ -11,19 +11,20 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@mui/material": "^7.3.7",
+    "@mui/icons-material": "^9.4.0",
+    "@mui/material": "^9.4.0",
     "next": "16.3.8",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "react-dropzone": "^14.3.8"
+    "react-dropzone": "^20.1.2"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@types/node": "^26",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "eslint": "9.39.5",
+    "eslint": "10.12.0",
     "eslint-config-next": "16.3.8",
-    "typescript": "^5"
+    "typescript": "^7"
   },
   "overrides": {
     "@types/react": "19.3.0",

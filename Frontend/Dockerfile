@@ -1,4 +1,3 @@
-# frontend/Dockerfile
 FROM node:20-bookworm-slim AS deps
 WORKDIR /app
 COPY package*.json ./
@@ -9,6 +8,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+
+ARG BACKEND_URL
+ENV BACKEND_URL=$BACKEND_URL
+
 RUN npm run build
 
 FROM node:20-bookworm-slim AS runner
